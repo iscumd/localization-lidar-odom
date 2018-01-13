@@ -21,8 +21,10 @@ obstacles = []
 obstacles_prev = [[0,0],[0,0]]
 robot_location_prev = geometries.Pose2D()
 
+
 def distance_pose2D(one, two): #two geometries.Pose2D()
-    distance(one.x, one.y, two.x, two.y)
+    return distance(one.x, one.y, two.x, two.y)
+
 
 def distance(x1,y1,x2,y2):
     x = (x1 - x2)
@@ -53,11 +55,11 @@ def calculate_robot_position(landmarks): #tuple of two yeti_snowplow.obstacle
     u = 2*s*q - 2*xa
     v = xa*xa + s*s - da*da
 
-    answer_one = = geometries.Pose2D()
-    answer_one.x = (-u + math.sqrt(u*u - 4*t*v))/2*t
+    answer_one = geometries.Pose2D()
+    answer_one.x = (-u + math.sqrt(u*u - 4*t*v))/(2*t)
     answer_one.y = q*answer_one.x + p
-    answer_two = = geometries.Pose2D()
-    answer_two.x = (-u - math.sqrt(u*u - 4*t*v))/2*t
+    answer_two = geometries.Pose2D()
+    answer_two.x = (-u - math.sqrt(u*u - 4*t*v))/(2*t)
     answer_two.y = q*answer_two.x + p
 
     if(distance_pose2D(answer_one,robot_location_prev) < distance_pose2D(answer_two,robot_location_prev)):
