@@ -1,9 +1,11 @@
+#!/usr/bin/env python
 import rospy
 import math
 import time
 from random import randint
 import sensor_msgs.msg as sensors
 import geometry_msgs.msg as geometries
+import yeti_snowplow.msg as yeti_snowplow
 
 scan_filtered_pub = rospy.Publisher('scan_filtered', sensors.PointCloud,queue_size=10)
 obstacle1_pub = rospy.Publisher('obstacle1', geometries.Pose2D,queue_size=10)
@@ -17,16 +19,51 @@ global obstacles
 map_ready = False
 obstacles = []
 obstacles_prev = [[0,0],[0,0]]
+robot_location_prev = geometries.Pose2D()
 
+def distance_pose2D(one, two): #two geometries.Pose2D()
+    distance(one.x, one.y, two.x, two.y)
 
 def distance(x1,y1,x2,y2):
-    return math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
+    x = (x1 - x2)
+    y = (y1 - y2)
+    return math.sqrt(x*x + y*y)
 
 
 def polar_to_cartesian(theta, rot):
     x = math.cos(theta) * rot
     y = math.sin(theta) * rot
     return [x,y]
+
+
+def calculate_robot_position(landmarks): #tuple of two yeti_snowplow.obstacle
+    xa = landmarks[0].x
+    ya = landmarks[0].y
+    da = landmarks[0].distance
+    xb = landmarks[1].x
+    yb = landmarks[1].y
+    db = landmarks[1].distance
+
+    o = (2*yb - 2*ya)
+    p = (da*da - db*db - xa*xa + xb*xb - ya*ya + yb*yb)/o
+    q = -(2*xb - 2*xa)/o
+
+    s = p-ya
+    t = q*q + 1
+    u = 2*s*q - 2*xa
+    v = xa*xa + s*s - da*da
+
+    answer_one = = geometries.Pose2D()
+    answer_one.x = (-u + math.sqrt(u*u - 4*t*v))/2*t
+    answer_one.y = q*answer_one.x + p
+    answer_two = = geometries.Pose2D()
+    answer_two.x = (-u - math.sqrt(u*u - 4*t*v))/2*t
+    answer_two.y = q*answer_two.x + p
+
+    if(distance_pose2D(answer_one,robot_location_prev) < distance_pose2D(answer_two,robot_location_prev)):
+        return answer_one
+    else:
+        return answer_two
 
 
 def filter_laser_scan(data,robot_x,robot_y):
