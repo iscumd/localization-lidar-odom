@@ -22,7 +22,7 @@ obstacles_prev = [[0,0],[0,0]]
 robot_location_prev = geometries.Pose2D()
 
 
-def distance_pose2D(one, two): #two geometries.Pose2D()
+def distance_pose2D(one, two): #geometries.Pose2D, geometries.Pose2D
     return distance(one.x, one.y, two.x, two.y)
 
 
@@ -38,7 +38,12 @@ def polar_to_cartesian(theta, rot):
     return [x,y]
 
 
-def calculate_robot_position(landmarks): #tuple of two yeti_snowplow.obstacle
+def calculate_robot_position(landmarks, robot_location_prev, landmarks_prev):
+    #tuple of two yeti_snowplow.obstacle, geometries.Pose2D, tuple of two yeti_snowplow.obstacle
+    heading0 = -(landmarks[0].heading - landmarks_prev[0].heading) + robot_location_prev.theta
+    heading1 = -(landmarks[1].heading - landmarks_prev[1].heading) + robot_location_prev.theta
+    heading = (heading0 + heading1)/2
+    
     xa = landmarks[0].x
     ya = landmarks[0].y
     da = landmarks[0].distance
@@ -58,9 +63,11 @@ def calculate_robot_position(landmarks): #tuple of two yeti_snowplow.obstacle
     answer_one = geometries.Pose2D()
     answer_one.x = (-u + math.sqrt(u*u - 4*t*v))/(2*t)
     answer_one.y = q*answer_one.x + p
+    answer_one.theta = heading
     answer_two = geometries.Pose2D()
     answer_two.x = (-u - math.sqrt(u*u - 4*t*v))/(2*t)
     answer_two.y = q*answer_two.x + p
+    answer_two.theta = heading
 
     if(distance_pose2D(answer_one,robot_location_prev) < distance_pose2D(answer_two,robot_location_prev)):
         return answer_one
