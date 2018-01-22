@@ -2,6 +2,7 @@
 
 import rospy
 import math
+import obstacle as modules
 import sensor_msgs.msg as sensors
 import geometry_msgs.msg as geometries
 
@@ -11,6 +12,7 @@ class ObstacleDetector:
     def __init__(self):
         self.obstacles_map = geometries.PoseArray()
         self.obstacles = geometries.PoseArray()
+        self.obstacles_prev = geometries.PoseArray()
         self.robot_pose = geometries.Pose2D()
         self.robot_pose.x = 0
         self.robot_pose.y = 0
@@ -38,10 +40,11 @@ class ObstacleDetector:
             point.append(data.ranges[i])
             if ((robot_x + point[0] > -2) and (robot_x + point[0] < 1.7) and (robot_y + point[1] > 0) and ( # change this to proper filter dimensions later
                     robot_y + point[1] < 8) and (point[0] != 0 and point[1] != 0)):
-                if (abs(point[0]) > .1 and abs(point[1]) > 1):
+                if (abs(point[0]) > .1 and abs(point[1]) > .1):
+                    #if(self.map_ready == False):
                     points.append([robot_x + point[0], robot_y + point[1], robot_t + point[2], point[3]])
-                #elif (self.map_ready and abs(point[0]) > .08 and abs(point[1]) > .08):
-                #    points.append([robot_x + point[0], robot_y + point[1], robot_t + point[2]])
+                    #else:
+                    #    points.append([point[0], point[1], point[2], point[3]]) #points will no longer be absolute if map is initialized
         return points
 
     def distance_cluster(self, points):
@@ -76,7 +79,7 @@ class ObstacleDetector:
         return averages
 
     def close_enough(self, a, b):
-        if abs(a.x - b.x) < 0.2 and abs(a.y - b.y) < 0.2:
+        if abs(a.x - b.x) < 0.1 and abs(a.y - b.y) < 0.1:
             return True
         return False
 
@@ -86,21 +89,48 @@ class ObstacleDetector:
         filtered_scan = self.filter_laser_scan(scan, self.robot_pose.x, self.robot_pose.y, self.robot_pose.theta)
         self.filtered_scan = filtered_scan
         #self.scan_filtered_pub.publish(self.filtered_scan)
-        if(len(filtered_scan) < 0):
+        if(len(filtered_scan) == 0):
             return 0
         obstacle_list = self.distance_cluster(filtered_scan)
         obstacles = geometries.PoseArray()
         if obstacle_list == 0:
             return 0
+        self.obstacles_prev = self.obstacles
         for i in range(0, len(obstacle_list)):
             obs = geometries.Pose()
             obs.position.x = obstacle_list[i][0]
             obs.position.y = obstacle_list[i][1]
             obs.orientation.w = obstacle_list[i][2]
             obs.orientation.z = obstacle_list[i][3]
-            obstacles.poses.append(obs)
+            if not self.map_ready:
+                obstacles.poses.append(obs)
+            else:
+                #if self.close_enough(obs.position,self.obstacles_map.poses[0].position):
+                obstacles.poses.append(obs)
+                #elif self.close_enough(obs.position,self.obstacles_map.poses[1].position):
+                    #obstacles.poses.append(obs)
         self.obstacles = obstacles
         if self.map_ready == False:
             self.obstacles_map = obstacles
         #self.obstacles_pub.publish(obstacles)
         return obstacles
+
+
+class ObstacleDetector2:
+    def __init__(self):
+        self.obstacles = modules.Obstacle()
+
+    def distance(self, x1,y1,x2,y2):
+        return math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
+
+    def polar_to_cartesian(self,theta, dist):
+        x = math.cos(theta) * dist
+        y = math.sin(theta) * dist
+        return [x, y]
+
+    def close_enough(self, a, b):
+        if abs(a.x - b.x) < 0.1 and abs(a.y - b.y) < 0.1:
+            return True
+        return False
+
+    #def detect_obstacles(self, scan):

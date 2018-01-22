@@ -27,7 +27,8 @@ class Localizer:
 
 
                     #obstacles is a generated map
-    def calculate_robot_position(self, obstacles, obstacles_prev, robot_location_prev):
+
+    def calculate_robot_position(self, obstacles, obstacles_prev, robot_location_prev, map):
         # geometries.PoseArray, geometries.Pose2D, geometries.PoseArray, returns Pose2D absolute coordinates
         if (len(obstacles.poses) < 2):
             return 0
@@ -37,15 +38,15 @@ class Localizer:
         obstacles.poses[1].orientation.w - obstacles_prev.poses[1].orientation.w) + robot_location_prev.theta
         heading = (heading0 + heading1) / 2
 
-        xa = obstacles.poses[0].position.x
-        ya = obstacles.poses[0].position.y
+        xa = map.poses[0].position.x
+        ya = map.poses[0].position.y
         #da = self.distance(obstacles.poses[0].position.x, obstacles.poses[0].position.y, robot_location_prev.x,
                       #robot_location_prev.y)
         da = obstacles.poses[0].orientation.z
 
 
-        xb = obstacles.poses[1].position.x
-        yb = obstacles.poses[1].position.y
+        xb = map.poses[1].position.x
+        yb = map.poses[1].position.y
         #db = self.distance(obstacles.poses[1].position.x, obstacles.poses[1].position.y, robot_location_prev.x,
                       #robot_location_prev.y)
         db = obstacles.poses[1].orientation.z
@@ -78,8 +79,8 @@ class Localizer:
             return True
         return False
 
-    def localize(self, obstacles,map):
-        self.pose = self.calculate_robot_position(obstacles,map,self.robot_pose_prev)
+    def localize(self, obstacles,obstacles_prev, map):
+        self.pose = self.calculate_robot_position(obstacles,obstacles_prev,self.robot_pose_prev,map)
         self.robot_pose_prev = self.pose
         #self.pose_pub.publish(self.pose)
         return self.pose
