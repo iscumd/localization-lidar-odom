@@ -31,15 +31,20 @@ class ObstacleDetector:
         y = math.sin(theta) * dist
         return [x, y]
 
+    def point_rotate(self, xy, theta):
+        x = xy[0] * math.cos(theta) - xy[1] * math.sin(theta)
+        y = xy[0] * math.sin(theta) + xy[1] * math.cos(theta)
+        return [x, y]
+
     def filter_laser_scan(self, data, robot_x, robot_y, robot_t):  # input data as polar coordinates, returns absolute points
-        start = data.angle_min + robot_t
+        start = data.angle_min - robot_t
         points = []
         for i in range(0, len(data.ranges)):
-            point = self.polar_to_cartesian(start + data.angle_increment * i, data.ranges[i])
+            point = self.point_rotate(self.polar_to_cartesian(start + data.angle_increment * i, data.ranges[i]), robot_t)
             point.append(data.angle_increment * i)
             point.append(data.ranges[i])
-            if ((robot_x + point[0] > -2) and (robot_x + point[0] < 1.7) and (robot_y + point[1] > 0) and ( # change this to proper filter dimensions later
-                    robot_y + point[1] < 8) and (point[0] != 0 and point[1] != 0)):
+            if ((robot_x + point[0] > -2) and (robot_x + point[0] < 1.7) and (robot_y + point[1] > -2.7) and ( # change this to proper filter dimensions later
+                    robot_y + point[1] < 8) and (point[0] != 0 and point[1] != 0) and point[1] > 0):
                 if (abs(point[0]) > .1 and abs(point[1]) > .1):
                     #if(self.map_ready == False):
                     points.append([robot_x + point[0], robot_y + point[1], robot_t + point[2], point[3]])
@@ -86,14 +91,20 @@ class ObstacleDetector:
     def detect_obstacles(self, scan):
         self.curr_scan = scan
         self.numScans = self.numScans + 1
+        # print "Running filter_laser_scan"
         filtered_scan = self.filter_laser_scan(scan, self.robot_pose.x, self.robot_pose.y, self.robot_pose.theta)
         self.filtered_scan = filtered_scan
         #self.scan_filtered_pub.publish(self.filtered_scan)
         if(len(filtered_scan) == 0):
+            print "filtered_scan is 0!"
             return 0
         obstacle_list = self.distance_cluster(filtered_scan)
         obstacles = geometries.PoseArray()
         if obstacle_list == 0:
+            print "obstacle_list is 0!"
+            return 0
+        if len(obstacle_list) < 2:
+            print "obstacle_list < 2!"
             return 0
         self.obstacles_prev = self.obstacles
         for i in range(0, len(obstacle_list)):

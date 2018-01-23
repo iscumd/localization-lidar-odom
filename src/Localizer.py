@@ -59,13 +59,15 @@ class Localizer:
         t = q * q + 1
         u = 2 * s * q - 2 * xa
         v = xa * xa + s * s - da * da
+        # print str(map)
+        # print str(t) + ", " + str(u) + ", " + str(v)
 
         answer_one = geometries.Pose2D()
-        answer_one.x = -(-u + math.sqrt(u * u - 4 * t * v)) / (2 * t)
+        answer_one.x = (-u + math.sqrt(u * u - 4 * t * v)) / (2 * t)
         answer_one.y = q * answer_one.x + p
         answer_one.theta = heading
         answer_two = geometries.Pose2D()
-        answer_two.x = -(-u - math.sqrt(u * u - 4 * t * v)) / (2 * t)
+        answer_two.x = (-u - math.sqrt(u * u - 4 * t * v)) / (2 * t)
         answer_two.y = q * answer_two.x + p
         answer_two.theta = heading
 
@@ -81,6 +83,9 @@ class Localizer:
 
     def localize(self, obstacles,obstacles_prev, map):
         self.pose = self.calculate_robot_position(obstacles,obstacles_prev,self.robot_pose_prev,map)
-        self.robot_pose_prev = self.pose
+        if self.pose == 0:
+            pass #use odom
+        else:
+            self.robot_pose_prev = self.pose
         #self.pose_pub.publish(self.pose)
         return self.pose

@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import rospy
 import math
 import time
@@ -6,20 +7,40 @@ from Localizer import Localizer
 from random import randint
 import sensor_msgs.msg as sensors
 import geometry_msgs.msg as geometries
+# import yeti_snowplow.msg as yeti_snowplow
 
 L = Localizer()
 D = ObstacleDetector()
-pose_pub = rospy.Publisher('pose', geometries.Pose2D, queue_size=10)
+pose_pub = rospy.Publisher('/localization/robot_location', geometries.Pose2D, queue_size=10)
 map_pub = rospy.Publisher('map', geometries.PoseArray, queue_size=10)
 obstacles_pub = rospy.Publisher('obstacles', geometries.PoseArray, queue_size=10)
 
+# obstacles = geometries.PoseArray()
+
+# def obstaclesCallback(data):
+#     global obstacles
+#     obs = data.obstacles
+#     obstacles = geometries.PoseArray()
+#     for ob in obs:
+#         newOb = geometries.Pose()
+#         newOb.position.x = ob.x
+#         newOb.position.y = ob.y
+#         newOb.orientation.z = ob.distance
+#         newOb.orientation.w = ob.heading
+#         obstacles.poses.append(newOb)
 
 def localize(scan):
     global L
     global D
+    # global obstacles
+    # print str(obstacles)
 
+    # print "calling detect_obstacles()"
     obstacles = D.detect_obstacles(scan)
+    # D.numScans = 51
+
     if obstacles == 0:
+        print "Obstacle detection failed!"
         return 0
     if obstacles != 0:
         map_pub.publish(D.obstacles_map)
@@ -44,6 +65,7 @@ def localize(scan):
 
 
 def test():
+    rospy.init_node('localization_lidar_odom')
     global L
     obs1 = geometries.Pose()
     obs1.position.x = 1
@@ -89,11 +111,12 @@ def test():
 def main():
     rospy.init_node('localization_lidar_odom')
     rospy.Subscriber("scan", sensors.LaserScan, localize)
+    # rospy.Subscriber("/obstacle_detection/obstacles", yeti_snowplow.obstacles, obstaclesCallback)
     rospy.spin()
 
 
 if __name__ == '__main__':
     main()
-    #test()
+    # test()
 
 
